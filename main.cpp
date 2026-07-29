@@ -1,6 +1,7 @@
 #include "mainwindow.h"
-
+#include "shared/IShapePlugin.h"
 #include <QApplication>
+
 
 int main(int argc, char *argv[])
 {

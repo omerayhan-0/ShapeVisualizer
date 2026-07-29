@@ -11,6 +11,7 @@ qt_add_executable(ShapeVisualizer
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    shared/IShapePlugin.h
 )
 
 target_link_libraries(ShapeVisualizer
@@ -31,3 +32,5 @@ qt_generate_deploy_app_script(
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_script})
+
+add_subdirectory(plugins/circle)
