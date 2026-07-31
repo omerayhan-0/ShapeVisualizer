@@ -19,8 +19,8 @@ public:
 
 };
 
-#define IShapePlugin_iid "com.shapevisualizer.ishapeplugin.v1"
-Q_DECLARE_INTERFACE(IShapePlugin, IShapePlugin_iid)
+#define IShapePlugin_iid "com.shapevisualizer.ishapeplugin.v1" //IShapePlugin arayüzünün kimlik numarası oluşturuldu
+Q_DECLARE_INTERFACE(IShapePlugin, IShapePlugin_iid) //kimlik numarası kayıtlara eklendi ileride QPluginLoader bu bilgiyi kullanabilecek.
 
 
 

@@ -2,6 +2,9 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "pluginmanager.h"
+#include <QUdpSocket>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -19,5 +22,13 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    IShapePlugin* circlePlugin; //yüklenen circle plugini burada tutacaz
+    IShapePlugin* squarePlugin;
+    PluginManager pluginManager; //artık mainWindowun ömrüne bağlı
+    QUdpSocket* udpSocket;
+
+private slots:
+    void readUdpData();
+
 };
 #endif // MAINWINDOW_H
