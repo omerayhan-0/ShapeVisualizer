@@ -4,11 +4,16 @@
 
 #include "shared/IShapePlugin.h"
 #include <QString>
+#include <QPluginLoader>
+#include <QVector>
 
 class PluginManager {
 public:
-    // dosya yolunu al, o plugin'i yükleyip kullanıma hazır olarak döndür
     IShapePlugin* loadPlugin(const QString& path);
+    void unloadAll();   //tum yuklu pluginleri temizle
+
+private:
+    QVector<QPluginLoader*> loaders;   //yuklenen her loader'i burada saklayacagiz
 };
 
 

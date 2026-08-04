@@ -1,18 +1,28 @@
 #include "pluginmanager.h"
 #include <QPluginLoader>
 
-IShapePlugin* PluginManager::loadPlugin(const QString& path){
-    QPluginLoader loader(path);                     // hedef dosyayı belirt, henüz yüklemedi
-    QObject* pluginInstance = loader.instance();     // dosyayı gerçekten yükle, genel bir QObject al
+IShapePlugin* PluginManager::loadPlugin(const QString& path) {
+    QPluginLoader* loader = new QPluginLoader(path);   //artik pointer, new ile olusturuyoruz
+    QObject* pluginInstance = loader->instance();
 
-    if(!pluginInstance){
-        return nullptr;     // yükleme basarisiz oldu, bos donduruyoruz
+    if (!pluginInstance) {
+        delete loader;   //yukleme basarisizsa, bosuna listede tutmayalim
+        return nullptr;
     }
 
-
-    // genel QObject'i, aslinda IShapePlugin oldugunu belirterek donusturuyoruz (IShapePlugin formu doldurulabilirlik kontrolu)
     IShapePlugin* shapePlugin = qobject_cast<IShapePlugin*>(pluginInstance);
+
+    if (shapePlugin) {
+        loaders.append(loader);   //basariliysa, loader'i listeye ekle, unutmayalim
+    }
+
     return shapePlugin;
+}
 
-
+void PluginManager::unloadAll() {
+    for (QPluginLoader* loader : loaders) {
+        loader->unload();   //her loader'a "artik plugini iade ediyorum" de
+        delete loader;        //loader'in kendisini de temizle
+    }
+    loaders.clear();          //listeyi bosalt
 }

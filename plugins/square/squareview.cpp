@@ -13,5 +13,5 @@ void SquareView::updateCenter(const Point &center){
 
 void SquareView::paintEvent(QPaintEvent* event){ //burada Qt ye şunu çiz diyoruz
     QPainter painter(this);
-    painter.drawRect(centerPoint.x - 10, centerPoint.y - 10, 20, 20);
+    painter.drawRect(centerPoint.x - 1, centerPoint.y - 1, 2, 2);
 }

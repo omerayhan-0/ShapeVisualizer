@@ -32,17 +32,37 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     //yuklenen her plugin icin bir dock widget olustur
+    QList<QDockWidget*> allDocks;   //dock'lari sonra boyutlandirmak icin sakla
+
     for (IShapePlugin* plugin : loadedPlugins) {
         QWidget* widget = plugin->getWidget();                              //widget adında bir kutu aç, içine pluginin bize verdiği değeri koy
         QDockWidget* dock = new QDockWidget(plugin->pluginName(), this);    //dock adında bir kutu aç, içine, plugin'in kendi ismini başlık yaparak yeni yaratılmış bir panelin adresini koy.
         dock->setWidget(widget);                                            //setWidget fonksiyonunu çalıştır, ve bu fonksiyona widget'ı ver.
         addDockWidget(Qt::LeftDockWidgetArea, dock);                        //Az önce hazırladığımız paneli, pencerenin sol tarafına yerleştir.
+        allDocks.append(dock);                                              //dock'u listeye ekle, sonra boyutlandirmak icin
+    }
+
+    //tum dock'lara esit, genis bir baslangic boyutu ver
+    if (!allDocks.isEmpty()) {
+        resizeDocks(allDocks, QList<int>(allDocks.size(), 400), Qt::Vertical);
     }
 
     //UDP dinlemeyi UdpWorker'a devret (ikinci beyin, ayrı thread)
     udpWorker = new UdpWorker(this);
     connect(udpWorker, &UdpWorker::pointReceived, this, &MainWindow::handleNewPoint);
     udpWorker->startListening();
+
+
+    //pencereye ve panellere makul bir baslangic boyutu ver
+    resize(1000, 700);
+
+    //her dock'a minimum boyut ver, boylece acilista kucuk kalmasin
+    for (QDockWidget* dock : allDocks) {
+        dock->setMinimumHeight(300);
+        dock->setMinimumWidth(500);
+    }
+
+
 
 }
 
@@ -59,5 +79,6 @@ void MainWindow::handleNewPoint(Point point) {
 
 MainWindow::~MainWindow()
 {
+    pluginManager.unloadAll();   //program kapanirken, tum pluginleri duzgunce temizle
     delete ui;
 }

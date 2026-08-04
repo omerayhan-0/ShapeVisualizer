@@ -13,5 +13,5 @@ void CircleView::updateCenter(const Point &center){
 
 void CircleView::paintEvent(QPaintEvent* event){ //burada Qt ye şunu çiz diyoruz
     QPainter painter(this);
-    painter.drawEllipse(QPointF(centerPoint.x, centerPoint.y), 10, 10);
+    painter.drawEllipse(QPointF(centerPoint.x, centerPoint.y), 1, 1);
 }
