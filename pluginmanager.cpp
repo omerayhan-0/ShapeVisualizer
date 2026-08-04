@@ -10,7 +10,7 @@ IShapePlugin* PluginManager::loadPlugin(const QString& path){
     }
 
 
-    // genel QObject'i, aslinda IShapePlugin oldugunu belirterek donusturuyoruz
+    // genel QObject'i, aslinda IShapePlugin oldugunu belirterek donusturuyoruz (IShapePlugin formu doldurulabilirlik kontrolu)
     IShapePlugin* shapePlugin = qobject_cast<IShapePlugin*>(pluginInstance);
     return shapePlugin;
 

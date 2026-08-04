@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include "pluginmanager.h"
 #include <QUdpSocket>
+#include <QVector>
+#include "udpworker.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -22,13 +24,12 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    IShapePlugin* circlePlugin; //yüklenen circle plugini burada tutacaz
-    IShapePlugin* squarePlugin;
+    QVector<IShapePlugin*> loadedPlugins; //tek tek plugin yazmak yerine, dinamik listede tutmak.
     PluginManager pluginManager; //artık mainWindowun ömrüne bağlı
-    QUdpSocket* udpSocket;
+    UdpWorker* udpWorker;
 
 private slots:
-    void readUdpData();
+    void handleNewPoint(Point point);   //udpWorker'in zilini duyunca calisacak fonksiyon
 
 };
 #endif // MAINWINDOW_H

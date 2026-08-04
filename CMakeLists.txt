@@ -14,6 +14,8 @@ qt_add_executable(ShapeVisualizer
     shared/IShapePlugin.h
     pluginmanager.h
     pluginmanager.cpp
+    udpworker.cpp
+    udpworker.h
 )
 
 target_link_libraries(ShapeVisualizer

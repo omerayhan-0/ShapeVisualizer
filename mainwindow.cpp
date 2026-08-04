@@ -2,6 +2,8 @@
 #include "ui_mainwindow.h"
 #include <QDockWidget>
 #include <QNetworkDatagram>
+#include <QDir>
+#include "udpworker.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -10,54 +12,48 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    //plugin yoneticisini olustur, circle plugin dosyasını yüklemesini iste
-    QString pluginPath = QCoreApplication::applicationDirPath() + "/../../../plugins/circle/libcircleplugin.dylib";
-    circlePlugin = pluginManager.loadPlugin(pluginPath);
+    //plugins klasorunu tara, icindeki her .dylib dosyasini bul ve yukle
+    QString pluginsBasePath = QCoreApplication::applicationDirPath() + "/../../../plugins";      //hostun çalıştığı yerden, plugin klasörünü bul
+    QDir pluginsDir(pluginsBasePath);                                                            //QDir tipinde nesne oluşturuyoruz, plugins klasörünü temsil ediyor.
+    QStringList subFolders = pluginsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);           //plugins klasörünün içindeki şeyleri listele
 
+    for (const QString& folder : subFolders) {
+        QDir subDir(pluginsDir.absoluteFilePath(folder));                                       //plugins klasörünün içinde, folder(örn: circle) adlı alt klasörün tam yolunu bul ve bana ver
+        QStringList dylibFiles = subDir.entryList(QStringList() << "*.dylib", QDir::Files);     //subDir(circle,square...) içinde .dylib uzantılı dosyaları bul
 
-    if (circlePlugin) {
-        QWidget* circleWidget = circlePlugin->getWidget();
-        QDockWidget* circleDock = new QDockWidget("Circle", this);
-        circleDock->setWidget(circleWidget);
-        addDockWidget(Qt::LeftDockWidgetArea, circleDock);
+        for (const QString& fileName : dylibFiles) {
+            QString fullPath = subDir.absoluteFilePath(fileName);                               //dosyanın tam yolunu alır
+            IShapePlugin* plugin = pluginManager.loadPlugin(fullPath);                          //pluginManager a git, fullPath'teki dosyayı yükle,bana getirdiğin sonucu plugin adlı kutuya koy
+
+            if (plugin) {
+                loadedPlugins.append(plugin);                                                   //eğer yükleme başarılıysa bunu listeye ekle
+            }
+        }
     }
 
-    QString squarePluginPath = QCoreApplication::applicationDirPath() + "/../../../plugins/square/libsquareplugin.dylib";
-    squarePlugin = pluginManager.loadPlugin(squarePluginPath);
-
-    if (squarePlugin) {
-        QWidget* squareWidget = squarePlugin->getWidget();
-        QDockWidget* squareDock = new QDockWidget("Square", this);
-        squareDock->setWidget(squareWidget);
-        addDockWidget(Qt::RightDockWidgetArea, squareDock);
+    //yuklenen her plugin icin bir dock widget olustur
+    for (IShapePlugin* plugin : loadedPlugins) {
+        QWidget* widget = plugin->getWidget();                              //widget adında bir kutu aç, içine pluginin bize verdiği değeri koy
+        QDockWidget* dock = new QDockWidget(plugin->pluginName(), this);    //dock adında bir kutu aç, içine, plugin'in kendi ismini başlık yaparak yeni yaratılmış bir panelin adresini koy.
+        dock->setWidget(widget);                                            //setWidget fonksiyonunu çalıştır, ve bu fonksiyona widget'ı ver.
+        addDockWidget(Qt::LeftDockWidgetArea, dock);                        //Az önce hazırladığımız paneli, pencerenin sol tarafına yerleştir.
     }
 
-    //UDP dinlemeyi baslat
-    udpSocket = new QUdpSocket(this);
-    udpSocket->bind(QHostAddress::Any, 25001);
+    //UDP dinlemeyi UdpWorker'a devret (ikinci beyin, ayrı thread)
+    udpWorker = new UdpWorker(this);
+    connect(udpWorker, &UdpWorker::pointReceived, this, &MainWindow::handleNewPoint);
+    udpWorker->startListening();
 
-
-    connect(udpSocket, &QUdpSocket::readyRead, this, &MainWindow::readUdpData);
-    // udpSocket'a yeni veri geldiğinde (readyRead sinyali), readUdpData fonksiyonunu calistir
 }
 
-void MainWindow::readUdpData() {
-    QByteArray data = udpSocket -> receiveDatagram().data();    //sokete gelen veriyi al içindeki ham byteları dataya koy
-    qDebug() << "Gelen veri boyutu:" << data.size();
-
-    if(data.size() >= sizeof(Point)){                               //gelen verinin boyutu, bir pointin boyutundan büyük mü(küçükse eksik olabilir.)
-        Point receivedPoint;
-        memcpy(&receivedPoint, data.constData(), sizeof(Point));    //boş bir kutu oluştur (recievedPoint) gelen ham byteları onun içine boşalt
-        qDebug() << "Gelen nokta - x:" << receivedPoint.x << "y:" << receivedPoint.y;
-
-        if(circlePlugin){
-            circlePlugin -> handleMessage(receivedPoint);           //eğer circle plugin gercekten yuklendiyse ona "işte yeni nokta kendini güncelle" de.
+void MainWindow::handleNewPoint(Point point) {
+    //udpWorker'dan gelen hazir point'i, listedeki her plugin'e dagit
+    for (IShapePlugin* plugin : loadedPlugins) {
+        try {
+            plugin->handleMessage(point);
+        } catch (...) {
+            qDebug() << "Bir plugin hata verdi, atlaniyor:" << plugin->pluginName();
         }
-
-        if(squarePlugin){
-            squarePlugin -> handleMessage(receivedPoint);           //yukardakinin aynısı
-        }
-
     }
 }
 
