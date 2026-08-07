@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QUdpSocket>
 #include "shared/IShapePlugin.h"
+#include <QMutex>
 
 //THREAD (İKİNCİ BEYİN BÖLÜMÜ), DİNLEME VE POİNTE ÇEVİRME
 
@@ -14,14 +15,19 @@ public:
     explicit UdpWorker(QObject* parent = nullptr);
     void startListening();
 
-signals:                                            //UdpWorker in sinyal verme yeteneği var
-    void pointReceived(Point point);                //point hazir oldugunda calinan zil
+    bool tryGetPoint(Point& outPoint);              //yeni paket geldi mi diye kutuya sorar, varsa outPointe yazar.
+
+
 
 private slots:
     void onReadyRead();                             //udp'den veri gelince otomatik tetiklenen fonksiyon (refleks)
 
 private:
     QUdpSocket* udpSocket;                          //UDP Portunu dinleyen socket
+    QMutex mailboxMutex;                            //posta kutusunu koruyan kilit
+    Point mailboxPoint;                             //posta kutusu(son gelen point), tek yer var yeni veri gelince onun üstüne geliyor.
+    bool hasNewPoint;                               //kutuda okunmamis yeni veri var mı, bu olmasaydı yeni veri gelmese bile aynı veriyi tekrar okuyacaktı.
+
 
 };
 

@@ -1,9 +1,7 @@
 #ifndef CIRCLEVIEW_H
 #define CIRCLEVIEW_H
-
 #include <QWidget>
 #include "IShapePlugin.h"
-
 class CircleView : public QWidget{
 public:
     CircleView(QWidget* parent = nullptr); //widgetin parent i belirtilmemişse, görünmez olarak var olsun
@@ -17,12 +15,4 @@ private:
 
 
 };
-
-
-
-
-
-
-
-
 #endif

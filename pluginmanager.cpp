@@ -6,6 +6,8 @@ IShapePlugin* PluginManager::loadPlugin(const QString& path) {
     QObject* pluginInstance = loader->instance();
 
     if (!pluginInstance) {
+        lastError = loader->errorString();   //basarisizlik sebebini kaydet (delete etmeden once)
+
         delete loader;   //yukleme basarisizsa, bosuna listede tutmayalim
         return nullptr;
     }
@@ -14,6 +16,10 @@ IShapePlugin* PluginManager::loadPlugin(const QString& path) {
 
     if (shapePlugin) {
         loaders.append(loader);   //basariliysa, loader'i listeye ekle, unutmayalim
+    }
+    else {
+        lastError = "Dosya yuklendi ama IShapePlugin arayuzunu uygulamiyor";   //qobject_cast basarisiz oldu
+        delete loader;
     }
 
     return shapePlugin;

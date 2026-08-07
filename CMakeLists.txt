@@ -38,5 +38,10 @@ qt_generate_deploy_app_script(
 )
 install(SCRIPT ${deploy_script})
 
-add_subdirectory(plugins/circle)
-add_subdirectory(plugins/square)
+# plugins/ altindaki her klasoru otomatik bul ve derlemeye dahil et
+file(GLOB plugin_dirs LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/plugins/*)
+foreach(dir ${plugin_dirs})
+    if(IS_DIRECTORY ${dir})
+        add_subdirectory(${dir})
+    endif()
+endforeach()

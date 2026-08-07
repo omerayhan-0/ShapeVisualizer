@@ -15,14 +15,5 @@ protected:
 private:
     Point centerPoint; //point struct'ından nesne oluşturduk
 
-
 };
-
-
-
-
-
-
-
-
 #endif
