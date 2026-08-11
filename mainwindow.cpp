@@ -8,6 +8,33 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
+#include <QFileInfo>
+#include <QtMath>
+
+
+QString findPluginsRoot() {
+    QDir dir(QCoreApplication::applicationDirPath());
+    while (!dir.isRoot()) {
+        if (dir.exists("plugins")) {
+            return dir.absolutePath();
+        }
+        dir.cdUp();
+    }
+    return QString();
+}
+
+QString findLogRoot() {
+    QDir dir(QCoreApplication::applicationDirPath());
+    while (!dir.isRoot()) {                                           //diskin en tepesine varana kadar
+        if (dir.exists("plugins") && dir.exists("CMakeLists.txt")) {  //bu klasorde "logs" adinda bir alt klasor var mi?
+            return dir.absolutePath();                                //varsa, burasi proje koku, dur
+        }
+        dir.cdUp();                                                   //yoksa, bir kademe yukari cik
+    }
+    return QString();                                                 //hic bulunamadiysa, bos dondur (sorun var demek)
+}
+
+
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -15,6 +42,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+
 
 #ifdef Q_OS_WIN
     QString libExtension = "*.dll";
@@ -24,8 +53,12 @@ MainWindow::MainWindow(QWidget *parent)
     QString libExtension = "*.so";
 #endif
 
+
+
     //plugins klasorunu tara, icindeki her uygun uzantili dosyayi bul ve yukle
-    QString pluginsBasePath = QCoreApplication::applicationDirPath() + "/../../../plugins";      //hostun çalıştığı yerden, plugin klasörünü bul
+    QString logRoot = findLogRoot();
+    qDebug() << "Bulunan proje koku:" << logRoot;
+    QString pluginsBasePath = findPluginsRoot() + "/plugins";
     QDir pluginsDir(pluginsBasePath);                                                            //QDir tipinde nesne oluşturuyoruz, plugins klasörünü temsil ediyor.
 
     QStringList subFolders = pluginsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);           //plugins klasörünün içindeki şeyleri listele
@@ -42,24 +75,53 @@ MainWindow::MainWindow(QWidget *parent)
             } else {
                 QString errorReason = pluginManager.lastErrorMessage();                         //neden basarisiz oldu, sebebi al
 
-                QFile logFile("log.txt");                                                       //log.txt dosyasini ac (yoksa olusturur)
+                QString logsDirPath = logRoot + "/logs";
+                QDir logsDir(logsDirPath);
+                if (!logsDir.exists()) {
+                    logsDir.mkpath(".");
+                }
+                QFile logFile(logsDirPath + "/log.txt");                                                       //log.txt dosyasini ac (yoksa olusturur)
                 if (logFile.open(QIODevice::Append | QIODevice::Text)) {                        //Append: dosyanin sonuna ekle, eskiyi silme
                     QTextStream stream(&logFile);
                     stream << fileName << " yuklenemedi. Sebep: " << errorReason << "\n";
                     logFile.close();
                 }
+
             }
         }
     }
 
-    //yuklenen her plugin icin bir sekme (tab) olustur
-    QTabWidget* tabWidget = new QTabWidget(this);   //tum sekmeleri barindiran ana konteyner
-    for (IShapePlugin* plugin : loadedPlugins) {
-        QWidget* widget = plugin->getWidget();                                                  //widget adında bir kutu aç, içine pluginin bize verdiği değeri koy
-        tabWidget->addTab(widget, plugin->pluginName());                                        //bu widget'i, plugin'in kendi ismini baslik yaparak, yeni bir sekme olarak ekle
-    }
+    // ANA YATAY DUZEN: sol = grid alani, sag = buton seridi
+    QWidget* centralWidget = new QWidget(this);
+    QHBoxLayout* mainLayout = new QHBoxLayout(centralWidget);
 
-    setCentralWidget(tabWidget);                                                                //bu sekmeli konteyneri, pencerenin merkezi yap
+    // SOL TARAF: grid alani (baslangicta bos)
+    QWidget* gridContainer = new QWidget(this);
+    pluginGridLayout = new QGridLayout(gridContainer);
+    mainLayout->addWidget(gridContainer, 1);                    //1 = esnek, cogu alani kaplasin
+
+    // SAG TARAF: dikey buton seridi
+    QWidget* buttonPanel = new QWidget(this);
+    QVBoxLayout* buttonLayout = new QVBoxLayout(buttonPanel);
+    for (IShapePlugin* plugin : loadedPlugins) {
+        QPushButton* button = new QPushButton(plugin->pluginName(), this);
+        connect(button, &QPushButton::clicked, this, [this, plugin]() {
+            togglePlugin(plugin);
+        });
+        buttonLayout->addWidget(button);
+        pluginButtons[plugin] = button;                          //dugmeyi haritada sakla
+
+        // Her plugin icin bir cerceveli kutu (QGroupBox) hazirla, ama HENUZ ekrana koyma
+        QGroupBox* container = new QGroupBox(plugin->pluginName(), this);
+        QVBoxLayout* containerLayout = new QVBoxLayout(container);
+        containerLayout->addWidget(plugin->getWidget());
+        pluginContainers[plugin] = container;                    //cerceveyi haritada sakla
+    }
+    buttonLayout->addStretch();                                  //dugmeler yukarida toplansin, altta bosluk kalsin
+    mainLayout->addWidget(buttonPanel);
+
+    setCentralWidget(centralWidget);
+
 
     //UDP dinlemeyi UdpWorker'a devret (ikinci beyin, ayri thread)
     udpWorker = new UdpWorker(this);
@@ -115,6 +177,44 @@ void MainWindow::turnOffLight() {
 void MainWindow::updateFrequencyLabel() {
     frequencyLabel->setText(QString::number(packetCountThisSecond) + " paket/sn");                //gecen 1 saniyede kac paket geldiyse onu yaz
     packetCountThisSecond = 0;                                                                     //sayaci sifirla, yeni saniyeye sifirdan basla
+}
+
+void MainWindow::togglePlugin(IShapePlugin* plugin) {
+    if (activePlugins.contains(plugin)) {
+        // ZATEN ACIK - kapat
+        activePlugins.removeAll(plugin);
+        pluginContainers[plugin]->setParent(nullptr);         //grid'den cikar (ama widget'i silme, sadece gizle)
+    } else {
+        // KAPALI - ac
+        activePlugins.append(plugin);
+    }
+    rebuildGrid();                                             //her durumda grid'i yeniden duzenle
+}
+
+void MainWindow::rebuildGrid() {
+    // once grid'i tamamen bosalt (widget'lari SILMEDEN, sadece grid'den cikararak)
+    QLayoutItem* item;
+    while ((item = pluginGridLayout->takeAt(0)) != nullptr) {
+        delete item;                                           //sadece "yerlestirme bilgisini" sil, widget'a dokunma
+    }
+
+    int count = activePlugins.size();
+    if (count == 0) {
+        return;                                                //hic acik plugin yoksa, yapacak bir sey yok
+    }
+
+    int columns = qCeil(qSqrt(count));                          //kareye yakin bir sutun sayisi hesapla
+    int row = 0, col = 0;
+    for (IShapePlugin* plugin : activePlugins) {
+        QGroupBox* container = pluginContainers[plugin];
+        container->setParent(nullptr);                          //onceki parent'tan tamamen kopar (guvenlik icin)
+        pluginGridLayout->addWidget(container, row, col);
+        col++;
+        if (col >= columns) {
+            col = 0;
+            row++;
+        }
+    }
 }
 
 MainWindow::~MainWindow()

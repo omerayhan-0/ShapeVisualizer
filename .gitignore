@@ -82,3 +82,6 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 /.qtcreator/
+
+# Log dosyalari (kisiye/calistirmaya ozel, paylasilmamali)
+/logs/

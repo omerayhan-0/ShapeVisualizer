@@ -8,6 +8,12 @@
 #include "udpworker.h"
 #include <QTimer>
 #include <QLabel>
+#include <QGridLayout>
+#include <QGroupBox>
+#include <QPushButton>
+#include <QMap>
+
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -34,12 +40,19 @@ private:
     QTimer* lightOffTimer;              //isigi tekrar griye donduren, tek seferlik timer
     int packetCountThisSecond;          //bu saniye icinde kac paket geldi sayaci
     QTimer* frequencyUpdateTimer;       //her saniye frekansi hesaplayip yazan timer
+    QGridLayout* pluginGridLayout;                            //acik pluginlerin dizildigi grid
+    QVector<IShapePlugin*> activePlugins;                      //su an ekranda acik olan pluginler (sirali)
+    QMap<IShapePlugin*, QGroupBox*> pluginContainers;           //her plugin'in cerceveli kutusu (baslikli widget)
+    QMap<IShapePlugin*, QPushButton*> pluginButtons;             //her plugin'in ac/kapa dugmesi
+
 
 
 private slots:
-    void checkMailbox();                  //her tikte kutuya bakan fonksiyon
-    void turnOffLight();                //isigi griye dondiren slot
-    void updateFrequencyLabel();        //her saniye frekans yazisini guncelleyen slot
+    void checkMailbox();                                           //her tikte kutuya bakan fonksiyon
+    void turnOffLight();                                          //isigi griye dondiren slot
+    void updateFrequencyLabel();                                 //her saniye frekans yazisini guncelleyen slot
+    void togglePlugin(IShapePlugin* plugin);                    //dugmeye basilinca cagrilir
+    void rebuildGrid();
 
 };
 #endif // MAINWINDOW_H
