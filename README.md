@@ -39,10 +39,7 @@ Detaylı sınıf diyagramı için bkz. proje içindeki UML görseli.
 ```bash
 brew install openssl
 ```
-Homebrew ile kurulan OpenSSL "keg-only" olabilir (yani sistem yoluna otomatik eklenmez); CMake bulamazsa şu parametreyle derleyin:
-```bash
-cmake -S . -B build -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
-```
+CMake, Homebrew'in OpenSSL'ini **otomatik olarak** bulur (`if(APPLE)` bloğu, `brew --prefix openssl` çıktısını kullanır) — ek bir parametre vermeniz genellikle gerekmez.
 
 **Windows:**
 - En kolay yol: [vcpkg](https://github.com/microsoft/vcpkg) ile kurulum:
@@ -64,11 +61,16 @@ sudo apt update && sudo apt install libssl-dev
 sudo dnf install openssl-devel
 ```
 
-#### ⚠️ Önemli: `externalLibs/libSecureLogLib.a` Platform Kısıtı
+#### `externalLibs/` İçindeki SecureLogger Kütüphanesi
 
-Projedeki `externalLibs/libSecureLogLib.a` dosyası, şu an **yalnızca macOS (Apple Silicon/ARM64) için derlenmiş** bir statik kütüphanedir. Bu dosya, **farklı bir işletim sisteminde (Windows/Linux) doğrudan kullanılamaz** — derleme sırasında link hatası alınır.
+`externalLibs/` klasöründe, log şifreleme için kullanılan `SecureLogger` kütüphanesinin **iki platforma özel derlenmiş** hâli bulunuyor:
 
-Projeyi macOS dışında bir platformda derlemek için, bu kütüphanenin **ilgili platforma özel derlenmiş bir sürümünün** (Windows için `.lib`, Linux için o platforma uygun derlenmiş `.a`) temin edilip `externalLibs/` klasörüne eklenmesi ve `CMakeLists.txt`'deki `IMPORTED_LOCATION` satırının buna göre güncellenmesi gerekir. Bu, projenin bilinen, platforma bağlı bir kısıtıdır.
+- `libSecureLogLib.a` → macOS (Apple Silicon/ARM64) için
+- `libSecureLogLib_win.lib` → Windows için (MinGW-w64 ile derlenmiştir)
+
+`CMakeLists.txt`, derleme yapılan platforma göre (`if(WIN32)` / `else()`) doğru dosyayı **otomatik olarak** seçer.
+
+**⚠️ Önemli not:** Windows kütüphanesi **MinGW** derleyicisiyle üretilmiştir. Eğer Qt Creator'da **MSVC (Visual Studio)** tabanlı bir Kit kullanıyorsanız, bu dosya **uyumsuz olabilir** ve link hatası alabilirsiniz — bu durumda MinGW tabanlı bir Kit'e geçmeniz ya da kütüphanenin MSVC ile derlenmiş bir sürümünün temin edilmesi gerekir. Linux için şu an ayrı bir derleme bulunmamaktadır; bu, projenin bilinen bir kısıtıdır.
 
 ### Kurulum ve Derleme
 
@@ -174,10 +176,7 @@ See the UML diagram included in the project for full class relationships.
 ```bash
 brew install openssl
 ```
-Homebrew's OpenSSL is keg-only (not linked into the system path automatically); if CMake can't find it:
-```bash
-cmake -S . -B build -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
-```
+CMake **automatically** locates Homebrew's OpenSSL (an `if(APPLE)` block uses the output of `brew --prefix openssl`) — you generally don't need to pass anything manually.
 
 **Windows:**
 - Easiest path: install via [vcpkg](https://github.com/microsoft/vcpkg):
@@ -199,11 +198,16 @@ sudo apt update && sudo apt install libssl-dev
 sudo dnf install openssl-devel
 ```
 
-#### ⚠️ Important: `externalLibs/libSecureLogLib.a` Platform Limitation
+#### SecureLogger Library in `externalLibs/`
 
-The `externalLibs/libSecureLogLib.a` file included in this project is currently a static library **compiled only for macOS (Apple Silicon/ARM64)**. This file **cannot be used directly on a different operating system** (Windows/Linux) — attempting to link against it there will produce a build/link error.
+The `externalLibs/` folder contains **two platform-specific prebuilt versions** of the `SecureLogger` library used for encrypted logging:
 
-To build the project on a platform other than macOS, a **platform-appropriate build of this library** (a `.lib` for Windows, or an equivalently compiled `.a` for Linux) must be obtained and placed in `externalLibs/`, with the `IMPORTED_LOCATION` line in `CMakeLists.txt` updated accordingly. This is a known, platform-dependent limitation of the project.
+- `libSecureLogLib.a` → for macOS (Apple Silicon/ARM64)
+- `libSecureLogLib_win.lib` → for Windows (built with MinGW-w64)
+
+`CMakeLists.txt` automatically selects the correct file based on the build platform (`if(WIN32)` / `else()`).
+
+**⚠️ Important:** The Windows library was built with **MinGW**. If your Qt Creator Kit uses **MSVC (Visual Studio)** instead, this file may be **incompatible** and produce a link error — in that case, switch to a MinGW-based Kit, or obtain an MSVC-compiled version of the library. No separate build is currently available for Linux; this is a known limitation of the project.
 
 ### Build
 
