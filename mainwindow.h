@@ -12,6 +12,7 @@
 #include <QGroupBox>
 #include <QPushButton>
 #include <QMap>
+#include "SecureLogger.h"
 
 
 
@@ -33,6 +34,7 @@ private:
     Ui::MainWindow *ui;
     QVector<IShapePlugin*> loadedPlugins; //tek tek plugin yazmak yerine, dinamik listede tutmak.
     PluginManager pluginManager;          //artık mainWindowun ömrüne bağlı
+    SecureLogLib::SecureLogger secureLogger;
     UdpWorker* udpWorker;
     QTimer* mailboxCheckTimer;
     QLabel* activityLight;              //yesil/gri yanip sonen isik
@@ -44,7 +46,7 @@ private:
     QVector<IShapePlugin*> activePlugins;                      //su an ekranda acik olan pluginler (sirali)
     QMap<IShapePlugin*, QGroupBox*> pluginContainers;           //her plugin'in cerceveli kutusu (baslikli widget)
     QMap<IShapePlugin*, QPushButton*> pluginButtons;             //her plugin'in ac/kapa dugmesi
-
+    void writeLogError(const QString& message);
 
 
 private slots:

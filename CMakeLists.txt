@@ -45,3 +45,14 @@ foreach(dir ${plugin_dirs})
         add_subdirectory(${dir})
     endif()
 endforeach()
+
+# Arkadasin SecureLog kutuphanesini projeye tanit (statik, header'li versiyon)
+add_library(SecureLog STATIC IMPORTED)
+set_target_properties(SecureLog PROPERTIES
+    IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/externalLibs/libSecureLogLib.a
+)
+target_link_libraries(ShapeVisualizer PRIVATE SecureLog)
+target_include_directories(ShapeVisualizer PRIVATE ${CMAKE_SOURCE_DIR}/externalLibs)
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(ShapeVisualizer PRIVATE SecureLog OpenSSL::SSL OpenSSL::Crypto)

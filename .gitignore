@@ -85,3 +85,4 @@ CMakeLists.txt.user*
 
 # Log dosyalari (kisiye/calistirmaya ozel, paylasilmamali)
 /logs/
+!externalLibs/libSecureLogLib.a
