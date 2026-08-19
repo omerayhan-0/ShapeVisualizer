@@ -48,11 +48,20 @@ endforeach()
 
 # Arkadasin SecureLog kutuphanesini projeye tanit (statik, header'li versiyon)
 add_library(SecureLog STATIC IMPORTED)
-set_target_properties(SecureLog PROPERTIES
-    IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/externalLibs/libSecureLogLib.a
-)
+if(WIN32)
+    set_target_properties(SecureLog PROPERTIES
+        IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/externalLibs/libSecureLogLib_win.lib
+    )
+else()
+    set_target_properties(SecureLog PROPERTIES
+        IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/externalLibs/libSecureLogLib.a
+    )
+endif()
 target_link_libraries(ShapeVisualizer PRIVATE SecureLog)
 target_include_directories(ShapeVisualizer PRIVATE ${CMAKE_SOURCE_DIR}/externalLibs)
 
+if(APPLE)
+    execute_process(COMMAND brew --prefix openssl OUTPUT_VARIABLE OPENSSL_ROOT_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 find_package(OpenSSL REQUIRED)
-target_link_libraries(ShapeVisualizer PRIVATE SecureLog OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(ShapeVisualizer PRIVATE OpenSSL::SSL OpenSSL::Crypto)
