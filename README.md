@@ -32,8 +32,43 @@ Detaylı sınıf diyagramı için bkz. proje içindeki UML görseli.
 - **CMake 3.19+**
 - **C++17** destekleyen bir derleyici (Clang, GCC, MSVC)
 - **OpenSSL** (log şifreleme kütüphanesi için gerekli)
-  - macOS (Homebrew): `brew install openssl`
-  - Homebrew ile kurulan OpenSSL "keg-only" olabilir; CMake bulamazsa: `-DOPENSSL_ROOT_DIR=$(brew --prefix openssl)` parametresiyle derleyin
+
+#### OpenSSL Kurulumu (Platforma Göre)
+
+**macOS (Homebrew):**
+```bash
+brew install openssl
+```
+Homebrew ile kurulan OpenSSL "keg-only" olabilir (yani sistem yoluna otomatik eklenmez); CMake bulamazsa şu parametreyle derleyin:
+```bash
+cmake -S . -B build -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
+```
+
+**Windows:**
+- En kolay yol: [vcpkg](https://github.com/microsoft/vcpkg) ile kurulum:
+  ```powershell
+  vcpkg install openssl:x64-windows
+  ```
+  Sonra CMake'i vcpkg toolchain dosyasıyla çalıştırın:
+  ```powershell
+  cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=[vcpkg-yolu]/scripts/buildsystems/vcpkg.cmake
+  ```
+- Alternatif: [Shining Light Productions](https://slproweb.com/products/Win32OpenSSL.html) üzerinden hazır Windows kurulum paketi (Win64 OpenSSL) indirilebilir. Kurulum sonrası CMake bulamazsa `-DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL-Win64"` gibi bir parametre ile yönlendirin.
+
+**Linux (Debian/Ubuntu tabanlı):**
+```bash
+sudo apt update && sudo apt install libssl-dev
+```
+**Linux (Fedora/RHEL tabanlı):**
+```bash
+sudo dnf install openssl-devel
+```
+
+#### ⚠️ Önemli: `externalLibs/libSecureLogLib.a` Platform Kısıtı
+
+Projedeki `externalLibs/libSecureLogLib.a` dosyası, şu an **yalnızca macOS (Apple Silicon/ARM64) için derlenmiş** bir statik kütüphanedir. Bu dosya, **farklı bir işletim sisteminde (Windows/Linux) doğrudan kullanılamaz** — derleme sırasında link hatası alınır.
+
+Projeyi macOS dışında bir platformda derlemek için, bu kütüphanenin **ilgili platforma özel derlenmiş bir sürümünün** (Windows için `.lib`, Linux için o platforma uygun derlenmiş `.a`) temin edilip `externalLibs/` klasörüne eklenmesi ve `CMakeLists.txt`'deki `IMPORTED_LOCATION` satırının buna göre güncellenmesi gerekir. Bu, projenin bilinen, platforma bağlı bir kısıtıdır.
 
 ### Kurulum ve Derleme
 
@@ -132,8 +167,43 @@ See the UML diagram included in the project for full class relationships.
 - **CMake 3.19+**
 - A **C++17**-capable compiler (Clang, GCC, MSVC)
 - **OpenSSL** (required by the log-encryption library)
-  - macOS (Homebrew): `brew install openssl`
-  - Homebrew's OpenSSL is keg-only; if CMake can't find it, build with: `-DOPENSSL_ROOT_DIR=$(brew --prefix openssl)`
+
+#### Installing OpenSSL (per platform)
+
+**macOS (Homebrew):**
+```bash
+brew install openssl
+```
+Homebrew's OpenSSL is keg-only (not linked into the system path automatically); if CMake can't find it:
+```bash
+cmake -S . -B build -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
+```
+
+**Windows:**
+- Easiest path: install via [vcpkg](https://github.com/microsoft/vcpkg):
+  ```powershell
+  vcpkg install openssl:x64-windows
+  ```
+  Then configure CMake with the vcpkg toolchain file:
+  ```powershell
+  cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=[vcpkg-path]/scripts/buildsystems/vcpkg.cmake
+  ```
+- Alternative: download a prebuilt Windows installer (Win64 OpenSSL) from [Shining Light Productions](https://slproweb.com/products/Win32OpenSSL.html). If CMake can't find it afterward, point it explicitly: `-DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL-Win64"`.
+
+**Linux (Debian/Ubuntu-based):**
+```bash
+sudo apt update && sudo apt install libssl-dev
+```
+**Linux (Fedora/RHEL-based):**
+```bash
+sudo dnf install openssl-devel
+```
+
+#### ⚠️ Important: `externalLibs/libSecureLogLib.a` Platform Limitation
+
+The `externalLibs/libSecureLogLib.a` file included in this project is currently a static library **compiled only for macOS (Apple Silicon/ARM64)**. This file **cannot be used directly on a different operating system** (Windows/Linux) — attempting to link against it there will produce a build/link error.
+
+To build the project on a platform other than macOS, a **platform-appropriate build of this library** (a `.lib` for Windows, or an equivalently compiled `.a` for Linux) must be obtained and placed in `externalLibs/`, with the `IMPORTED_LOCATION` line in `CMakeLists.txt` updated accordingly. This is a known, platform-dependent limitation of the project.
 
 ### Build
 
